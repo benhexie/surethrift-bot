@@ -135,7 +135,7 @@ class Bot {
     // if (exists) return;
     fs.writeFileSync(
       `${__dirname}/../data/transactions.csv`,
-      "S/N,Account Number,Account Name,January,February,March,April,May,June,July,August,September,October,November,December,Total"
+      "S/N,Account Number,Account Name,January,February,March,April,May,June,July,August,September,October,November,December,Total,Average"
     );
   }
 
@@ -180,7 +180,7 @@ class Bot {
       november +
       december;
 
-    const line = `${sn},${accountNumber},${accountName},${january},${february},${march},${april},${may},${june},${july},${august},${september},${october},${november},${december},${total}`;
+    const line = `${sn},${accountNumber},${accountName},${january},${february},${march},${april},${may},${june},${july},${august},${september},${october},${november},${december},${total},${total/12}`;
     lines.push(line);
     fs.writeFileSync(`${__dirname}/../data/transactions.csv`, lines.join("\n"));
   }
