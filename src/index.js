@@ -56,7 +56,7 @@ class Bot {
       await this.page.evaluate(() => {
         document.querySelector("#datepicker1").value =
           this.from || "2023-01-01";
-        document.querySelector("#datepicker2").value = this.to || "2023-12-29";
+        document.querySelector("#datepicker2").value = this.to || "2023-12-31";
         document.querySelector("#go2").click();
       });
       await this.page.waitForSelector("#loading", { hidden: true });
@@ -189,12 +189,9 @@ class Bot {
     this.createCSV();
     await this.init();
     await this.getAccounts();
-    let i = 0;
     for (const account of this.accounts) {
       await this.getTransactions(account);
       this.appendToCSV(account);
-      if (i === 20) break;
-      i++;
     }
     await this.browser.close();
   }
@@ -202,5 +199,5 @@ class Bot {
 
 const bot = new Bot();
 // bot.setDates("2023-01-01", "2023-12-31");
-bot.setDates("2023-01-01", "2023-12-29");
+bot.setDates("2023-01-01", "2023-12-31");
 bot.run();
