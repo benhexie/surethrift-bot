@@ -2,6 +2,17 @@ require("dotenv").config({ path: `${__dirname}/../.env` });
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 
+// ........................................................
+const readline = require("readline");
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+const askQuestion = (question) => {
+  return new Promise((resolve) => rl.question(question, resolve));
+};
+// ........................................................
+
 class Bot {
   constructor() {
     this.username = process.env.USER;
@@ -23,6 +34,11 @@ class Bot {
     await this.page.type("#username", this.username);
     await this.page.type("#password", this.password);
     await this.page.click(`input[name='submit']`);
+    await this.page.waitForSelector("#one", { timeout: 300000 });
+    const oneValue = await askQuestion("Please enter the OTP: ");
+    await this.page.type("#one", oneValue);
+    rl.close();
+    await this.page.click(`input[name='submit_ord']`);
     await this.page.waitForNavigation();
     await this.page.goto("https://ihvn.surethrift.com/control/rec_savings");
   }
@@ -30,6 +46,15 @@ class Bot {
   async getAccounts() {
     console.log("Getting accounts...");
     await this.page.waitForSelector("table.records tr");
+    await this.page.evaluate(() => {
+      document.querySelector("#datepicker2").value = this.to || "2024-12-31";
+      document.querySelector("#go1").click();
+    });
+    await this.page.waitForFunction(() => {
+      const table = document.querySelector("#txtHint table:last-child");
+      return table || document.body.innerText.includes("No Records Found");
+    });
+    await this.page.waitForSelector("#loading", { hidden: true, timeout: 300000 });
     this.accounts = await this.page.evaluate(() => {
       const rows = Array.from(document.querySelectorAll("table.records tr"));
       return rows
@@ -55,8 +80,8 @@ class Bot {
       await this.page.type("#acctno", account.number);
       await this.page.evaluate(() => {
         document.querySelector("#datepicker1").value =
-          this.from || "2023-01-01";
-        document.querySelector("#datepicker2").value = this.to || "2023-12-31";
+          this.from || "2024-01-01";
+        document.querySelector("#datepicker2").value = this.to || "2024-12-31";
         document.querySelector("#go2").click();
       });
       await this.page.waitForSelector("#loading", { hidden: true });
@@ -180,7 +205,9 @@ class Bot {
       november +
       december;
 
-    const line = `${sn},${accountNumber},${accountName},${january},${february},${march},${april},${may},${june},${july},${august},${september},${october},${november},${december},${total},${total/12}`;
+    const line = `${sn},${accountNumber},${accountName},${january},${february},${march},${april},${may},${june},${july},${august},${september},${october},${november},${december},${total},${
+      total / 12
+    }`;
     lines.push(line);
     fs.writeFileSync(`${__dirname}/../data/transactions.csv`, lines.join("\n"));
   }
@@ -198,6 +225,5 @@ class Bot {
 }
 
 const bot = new Bot();
-// bot.setDates("2023-01-01", "2023-12-31");
-bot.setDates("2023-01-01", "2023-12-31");
+bot.setDates("2024-01-01", "2024-12-31");
 bot.run();
