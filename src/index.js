@@ -71,10 +71,13 @@ class Bot {
   async getAccounts() {
     console.log("Getting accounts...");
     await this.page.waitForSelector("table.records tr");
-    await this.page.evaluate(() => {
-      document.querySelector("#datepicker2").value = this.to || "2024-12-31";
-      document.querySelector("#go1").click();
-    });
+    await this.page.evaluate(
+      (to) => {
+        document.querySelector("#datepicker2").value = to;
+        document.querySelector("#go1").click();
+      },
+      this.to
+    );
     await this.page.waitForFunction(() => {
       const table = document.querySelector("#txtHint table:last-child");
       return table || document.body.innerText.includes("No Records Found");
@@ -106,12 +109,16 @@ class Bot {
       console.log(`Parsing transactions for ${account.name} ...`);
       await this.page.waitForSelector("#acctno");
       await this.page.type("#acctno", account.number);
-      await this.page.evaluate(() => {
-        document.querySelector("#datepicker1").value =
-          this.from || "2024-01-01";
-        document.querySelector("#datepicker2").value = this.to || "2024-12-31";
-        document.querySelector("#go2").click();
-      });
+      await this.page.evaluate(
+        (from, to) => {
+          document.querySelector("#datepicker1").value =
+            from;
+          document.querySelector("#datepicker2").value = to;
+          document.querySelector("#go2").click();
+        },
+        this.from,
+        this.to
+      );
       await this.page.waitForSelector("#loading", { hidden: true });
       await this.page.waitForFunction(() => {
         const table = document.querySelector("#txtHint table:last-child");
