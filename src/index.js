@@ -11,12 +11,20 @@ const rl = readline.createInterface({
 const askQuestion = (question) => {
   return new Promise((resolve) => rl.question(question, resolve));
 };
+
+const getOS = () => {
+  const platform = process.platform;
+  if (platform === "darwin") return "mac";
+  if (platform === "win32") return "windows";
+  if (platform === "linux") return "linux";
+  return "unknown";
+};
 // ........................................................
 
 class Bot {
   constructor() {
-    this.username = process.env.USER;
-    this.password = process.env.PASS;
+    this.username = process.env.username;
+    this.password = process.env.password;
   }
 
   setDates(from, to) {
@@ -25,8 +33,25 @@ class Bot {
   }
 
   async init() {
-    console.log("Initializing...");
-    this.browser = await puppeteer.launch({ headless: "new" });
+    console.log("Initializing...");    
+    const os = getOS();
+    console.log(`Detected OS: ${os}`);
+    let executablePath;
+    if (os === "mac") {
+      executablePath =
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    } else if (os === "windows") {
+      executablePath =
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+    } else if (os === "linux") {
+      executablePath = "/usr/bin/google-chrome";
+    }
+
+    this.browser = await puppeteer.launch({
+      executablePath,
+      headless: "new",
+      args: ["--no-sandbox"],
+    });
     this.page = await this.browser.newPage();
     await this.page.goto("https://ihvn.surethrift.com/control/");
     await this.page.waitForSelector("#login_form");
@@ -54,7 +79,10 @@ class Bot {
       const table = document.querySelector("#txtHint table:last-child");
       return table || document.body.innerText.includes("No Records Found");
     });
-    await this.page.waitForSelector("#loading", { hidden: true, timeout: 300000 });
+    await this.page.waitForSelector("#loading", {
+      hidden: true,
+      timeout: 300000,
+    });
     this.accounts = await this.page.evaluate(() => {
       const rows = Array.from(document.querySelectorAll("table.records tr"));
       return rows
@@ -156,10 +184,12 @@ class Bot {
   }
 
   createCSV() {
-    // const exists = fs.existsSync(`${__dirname}/../data/transactions.csv`);
-    // if (exists) return;
+    const dir = `${__dirname}/../data`;
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(
-      `${__dirname}/../data/transactions.csv`,
+      `${dir}/transactions.csv`,
       "S/N,Account Number,Account Name,January,February,March,April,May,June,July,August,September,October,November,December,Total,Average"
     );
   }
@@ -225,5 +255,8 @@ class Bot {
 }
 
 const bot = new Bot();
-bot.setDates("2024-01-01", "2024-12-31");
-bot.run();
+bot.setDates("2025-01-01", "2025-12-31");
+bot.run().catch((err) => {
+  console.error("Fatal Error:", err);
+  process.exit(1);
+});
